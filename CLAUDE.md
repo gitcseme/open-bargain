@@ -13,24 +13,40 @@ A marketplace built around scheduled, live bargain rooms. A seller opens a room 
 ## Stack
 - Backend: ASP.NET Core (.NET 10), EF Core, PostgreSQL
 - Frontend: React + TypeScript, Vite, Tailwind CSS + shadcn/ui
+- Auth: ASP.NET Core Identity for users/passwords. JWT access token (15 min, sent as Bearer) + rotating refresh token (7 days, httpOnly cookie)
 - Live updates: SignalR (inside the same app)
 - Tests: xUnit (backend), Vitest (frontend)
 - Repo/CI/CD: GitHub + GitHub Actions
 - Hosting: Azure App Service (API + built frontend), Azure Database for PostgreSQL, Azure Blob Storage, Azure Communication Services (email)
 
 ## Layout
-Modular monolith: one deployable app. Each module is a folder with its own endpoints, data and logic, and exposes one public API (`<Module>Api.cs` + `Contracts/`). Other modules call only that public API, in-process. They never touch another module's tables or internal classes. See `docs/architecture.md`.
+**Modular monolith with clean architecture inside each module.** Details are in `docs/architecture.md`.
 
 ```
 src/
-  OpenBargain.Api/
-    Modules/
-      Accounts/  Rooms/  Bargaining/  QA/  Notifications/  Admin/
-  web/                      # React + Vite
+  OpenBargain.Api/                          # host only: startup, JWT auth, SignalR hub, serves web build
+  OpenBargain.SharedKernel/
+  Modules/<Module>/
+    OpenBargain.Modules.<Module>/           # Domain/ Application/ Infrastructure/ Endpoints/ (all internal)
+    OpenBargain.Modules.<Module>.Contracts/ # public API: I<Module>Api + request/response types
+  web/                                      # React + Vite
 tests/
-  OpenBargain.Api.Tests/
+  OpenBargain.UnitTests/  OpenBargain.IntegrationTests/  OpenBargain.ArchitectureTests/
 .github/workflows/
 ```
+
+Modules: Accounts, Rooms, Bargaining, QA, Notifications, Admin. They are created when their first task starts.
+
+Boundary rules (checked by `OpenBargain.ArchitectureTests`):
+- **Between modules:**
+  - A module references only other modules' `.Contracts` projects.
+  - Calls go through `I<Module>Api`, in-process.
+  - A module never touches another module's tables or internal classes.
+  - Each module has its own `DbContext` and PostgreSQL schema.
+- **Inside a module:**
+  - Endpoints → Application → Domain. Infrastructure implements Application's interfaces.
+  - Domain has no outside dependencies.
+- **Keep it simple:** plain use-case classes and constructor injection. No MediatR, no generic repositories, no CQRS frameworks unless a real need shows up.
 
 ## Commands
 _To be filled in by task M0 (walking skeleton)._
