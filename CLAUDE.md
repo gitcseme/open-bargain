@@ -19,7 +19,7 @@ A marketplace built around scheduled, live bargain rooms. A seller opens a room 
 - Hosting: Azure App Service (API + built frontend), Azure Database for PostgreSQL, Azure Blob Storage, Azure Communication Services (email)
 
 ## Layout
-Modular monolith: one deployable app. Each module is a folder with its own endpoints, data and logic. Modules call each other through plain service interfaces, never through each other's tables.
+Modular monolith: one deployable app. Each module is a folder with its own endpoints, data and logic, and exposes one public API (`<Module>Api.cs` + `Contracts/`). Other modules call only that public API, in-process. They never touch another module's tables or internal classes. See `docs/architecture.md`.
 
 ```
 src/
@@ -51,10 +51,11 @@ _To be filled in by task M0 (walking skeleton)._
 
 ## Rules that must never break
 - The server decides room state, timestamps and event order. Clients only display them.
-- Never expose buyer contact details. Buyers appear under pseudonyms; the seller is clearly identified.
-- Buyer is by default pseudinums, they can decide their identity reveiling.
+- Never expose buyer contact details. The seller is clearly identified.
+- Buyers appear under a pseudonym by default and can choose to show their real display name in a room.
 - Private rooms never appear in discovery, search or public share previews. Only invitees can see them.
-- Stock can never be over-allocated, even when two accepts happen at the same time.
-- After a price is accepted in a room, no later deal in that room can be below that per-unit price.
+- Stock can never be over-allocated. Sold + held units never exceed total, even under simultaneous requests. Every stock change takes the room's PostgreSQL advisory lock inside one transaction.
+- An offer holds its quantity for a limited time. Stock is permanently reduced only when the deal is confirmed: either the seller accepts, or the buyer accepts the seller's counter-quantity.
+- After a deal at a per-unit price, no later deal in that room can be below that price (the price floor). The floor is visible to everyone; the seller's minimum price stays hidden.
 - A deal is an agreement, not a payment or delivery. The UI must say so.
 - Every room, offer, deal and moderation state change is recorded in the room's event history.

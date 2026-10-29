@@ -108,22 +108,27 @@ An offer is a structured proposal containing:
 - Optional short message.
 - Server timestamp and status.
 
-Offer statuses: **pending**, **accepted**, **rejected**, **withdrawn**, **expired**, or **partially accepted**. The MVP may omit buyer withdrawal if it cannot be implemented cleanly; if withdrawal is supported, retain it visibly in the event history.
+Offer statuses: **pending**, **countered**, **accepted**, **rejected**, **declined**, **withdrawn**, or **expired**. Withdrawal is supported while an offer is pending and stays visible in the event history.
 
 ### Offer behavior
 
-- Offers are visible to room participants with pseudonymous buyer display names. Do not expose buyer contact details.
+- Offers are visible to room participants. Buyers appear under a pseudonym by default and may choose to show their real display name in a room. Never expose buyer contact details.
 - Offers must be at or above the room’s current minimum acceptable per-unit price. The minimum is seller-configured and hidden from buyers. If no minimum is configured, use the asking price as the minimum. The product must validate this rule on the server.
-- Buyers may submit multiple offers while the room is live, subject to reasonable rate limits.
-- Seller actions are accept or reject. An accepted offer creates a deal for the accepted quantity and per-unit price.
-- The seller may accept less than the requested quantity if fewer units remain; the buyer must see the accepted quantity before the deal is confirmed. (Recommended MVP behavior.)
-- Accepted quantities are allocated atomically. Two simultaneous accepts must never allocate more than the room’s remaining quantity.
-- When quantity reaches zero, mark the room sold out and disable new offers and deal acceptance.
+- A buyer may have only one open (pending or countered) offer per room at a time. They may make a new offer once the previous one is closed, subject to reasonable rate limits.
+- **Stock hold:** submitting an offer holds its requested quantity for 5 minutes. An offer cannot request more than the currently available quantity (total − sold − held).
+- Seller actions are **accept**, **counter**, or **reject**:
+  - Accept confirms the deal for the requested quantity at the offered per-unit price.
+  - Counter proposes a different quantity (fewer, or more if stock is available) at the same price. The hold moves to the new quantity and restarts at 5 minutes; the buyer then accepts (deal confirmed) or declines.
+  - Reject releases the hold.
+- Stock is permanently reduced only when a deal is confirmed. Rejected, declined, withdrawn, and expired offers release their hold.
+- If the hold period passes without a confirmed deal, the offer expires and its hold is released.
+- Holds and deals are allocated atomically. Simultaneous requests must never make sold + held exceed the room’s total quantity.
+- When sold quantity reaches the total, mark the room sold out and disable new offers and deals.
 - A deal records buyer, seller, room, accepted quantity, per-unit price, total amount, currency, and timestamp. Do not represent the deal as paid or fulfilled.
 
 ### Price fairness rule
 
-Within one room, after the seller accepts an offer at per-unit price **P**, the seller cannot accept any later offer below **P** per unit. The accepted price becomes the room’s **minimum accepted price floor**. Offers below the floor are rejected by server validation, and the buyer is told the minimum acceptable price without revealing other buyers’ identities. The seller may accept offers at the floor or above it.
+Within one room, after a deal is confirmed at per-unit price **P**, no later deal in that room can be below **P** per unit. The highest confirmed price becomes the room’s **price floor**, which is **visible to everyone in the room**. Offers below the floor are rejected by server validation. An open offer that falls below a newly raised floor can no longer be confirmed and expires. The seller may accept offers at the floor or above it.
 
 This rule is per-unit. Quantity differences do not silently change the floor. If the seller wants to sell at a lower price, the seller must close the room and create a new room with the revised terms. The room event history must make accepted prices, quantities, and remaining stock understandable.
 
@@ -142,7 +147,7 @@ The live room must show:
 
 - Product title, photos/video, description, condition, pickup location, seller profile summary.
 - Room state and countdown to scheduled start or end.
-- Asking price, accepted per-unit price floor (if any), total quantity, and remaining quantity.
+- Asking price, price floor (if any), and quantity: total, sold, held, and available.
 - Joined participant count (may be approximate).
 - Chronological activity stream for offers and their state changes, deals, questions, seller answers, room start, room end, and sold-out state.
 - Offer composer and Q&A composer when the current user is eligible.
@@ -156,7 +161,7 @@ Notify joined buyers about:
 - Room starting (including a reminder before start, if supported).
 - Seller edit to material room details or schedule.
 - New seller announcement or answer to a question they asked.
-- Their offer being accepted, rejected, or partially accepted.
+- Their offer being accepted, countered, rejected, or expired (and, for sellers, a counter being accepted or declined).
 - Their deal being recorded.
 - Room ending soon, ended, sold out, or cancelled.
 
@@ -208,9 +213,9 @@ An implementation is MVP-ready when:
 3. Joined buyers are notified when a scheduled room starts and when their own offer/deal status changes.
 4. A live room displays synchronized product, schedule, inventory, visible offer activity, and public Q&A.
 5. A joined buyer can submit an offer with price and quantity and ask a question while the room is live.
-6. A seller can answer questions and accept or reject offers.
-7. Multiple accepted deals can be recorded without allocating more units than remain, including under concurrent requests.
-8. Once a price is accepted, the server prevents subsequent accepted per-unit prices below that room’s floor.
+6. A seller can answer questions and accept, counter, or reject offers; a buyer can accept or decline a counter.
+7. Offers hold stock for a limited time, and multiple deals can be confirmed without sold + held units ever exceeding the total, including under concurrent requests.
+8. Once a deal is confirmed at a price, the server prevents later deals below that room’s visible price floor.
 9. Ended, cancelled, and sold-out rooms reject new offers and clearly show their final state.
 10. Deals are recorded as agreements, not as completed payments or fulfillment.
 
@@ -219,12 +224,12 @@ An implementation is MVP-ready when:
 These defaults make the PRD actionable. Confirm or revise them during implementation planning if product discovery requires it:
 
 - **Market/currency:** Launch in Bangladesh with BDT; design currency as room data.
-- **Identity:** Public offer feed uses pseudonyms; seller is clearly identified. Private rooms require account login and invitation.
+- **Identity:** Buyers use pseudonyms by default and may choose to show their real display name per room; seller is clearly identified. Private rooms require account login and invitation.
 - **Visibility:** Anyone may view public room details; only authenticated joined users may offer or ask questions.
-- **Minimum price:** Seller may set a hidden minimum per-unit price; default to asking price if not set.
-- **Partial fulfillment:** Seller may accept fewer units than requested when inventory is insufficient, with explicit buyer-facing confirmation.
+- **Minimum price:** Seller may set a hidden minimum per-unit price; default to asking price if not set. The price floor from confirmed deals is visible.
+- **Stock hold and counter:** An offer holds its quantity for a limited time. The seller may counter with a different quantity; the buyer confirms or declines.
 - **Room duration:** Seller sets start and end times; no automatic extension.
-- **Offer expiry:** Offers expire when the room ends unless already accepted. The room displays this rule before submission.
+- **Offer expiry:** Open offers expire when their hold period passes or the room ends, sells out, or is cancelled. The room displays this rule before submission.
 - **Accepted deal:** Records a non-payment agreement; buyer and seller arrange payment and pickup outside the MVP.
 - **Notifications:** In-app plus email are the initial channels; browser push is optional.
 - **Moderation:** Basic reports and manual admin actions are included; advanced fraud detection is deferred.
