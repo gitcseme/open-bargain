@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/OpenBargain.Api/OpenBargain.Api.csproj" />
+    <Project Path="src/OpenBargain.SharedKernel/OpenBargain.SharedKernel.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/OpenBargain.IntegrationTests/OpenBargain.IntegrationTests.csproj" />
+    <Project Path="tests/OpenBargain.UnitTests/OpenBargain.UnitTests.csproj" />
+  </Folder>
+</Solution>
