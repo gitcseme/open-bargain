@@ -44,3 +44,7 @@ Add new entries at the bottom: date, decision, short reason.
     - Suspending a user revokes their refresh tokens.
     - Email verification is added when sending email exists (M7).
 14. **Admin.** Proposed. An admin-only section inside the same app, protected by an `Admin` role.
+
+## Delivery
+
+15. **Branches and CI.** Confirmed (2026-10-31). Feature branches merge into `develop` through a pull request; `develop` is merged into `main` for releases. CI (`.github/workflows/ci.yml`) runs on every pull request to `develop` or `main` and on pushes to them. Branch protection on `develop` requires the "Backend build and test" check to pass before merging.
