@@ -32,7 +32,7 @@ Status: `todo` · `in progress` · `done`
 | Task | Status |
 |---|---|
 | M0-1 Backend solution | done |
-| M0-2 PostgreSQL connection | todo |
+| M0-2 PostgreSQL connection | done |
 | M0-3 Frontend | todo |
 | M0-4 CI | todo |
 | M0-5 Deploy to Azure | todo |
