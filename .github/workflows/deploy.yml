@@ -1,0 +1,62 @@
+name: Deploy
+
+# Deploys when a pull request from develop into main is merged,
+# or manually (Actions tab → Deploy → Run workflow) from main only.
+# Direct pushes to main and PRs from other branches don't deploy.
+on:
+  pull_request:
+    branches: [main]
+    types: [closed]
+  workflow_dispatch:
+
+# Never run two deploys at once; a newer one waits for the running one.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and deploy to Azure
+    # PR: "closed" also fires when a PR is closed without merging, so check it was merged from develop.
+    # Manual: the Run workflow form lets you pick any branch, so allow main only.
+    if: >-
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'develop')
+      || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://open-bargain-efb0gkdfczesg4dw.southeastasia-01.azurewebsites.net
+    steps:
+      # PR: the commit the merge created on main. Manual: the latest commit on main.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: src/web/package-lock.json
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      # 1. Build the frontend into src/OpenBargain.Api/wwwroot (see vite.config.ts)
+      - name: Build frontend
+        working-directory: src/web
+        run: |
+          npm ci
+          npm run build
+
+      # 2. Publish the API; wwwroot (the frontend) is included automatically
+      - name: Publish API
+        run: dotnet publish src/OpenBargain.Api --configuration Release --output publish
+
+      # 3. Upload to the Web App using the publish profile secret
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: open-bargain
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: publish
