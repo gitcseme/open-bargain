@@ -49,7 +49,17 @@ Boundary rules (checked by `OpenBargain.ArchitectureTests`):
 - **Keep it simple:** plain use-case classes and constructor injection. No MediatR, no generic repositories, no CQRS frameworks unless a real need shows up.
 
 ## Commands
-_To be filled in by task M0 (walking skeleton)._
+Local database (PostgreSQL on port 15432):
+- `docker compose up -d`
+
+Backend (from the repo root):
+- Run the API: `dotnet run --project src/OpenBargain.Api` (http://localhost:5142)
+- Build: `dotnet build OpenBargain.slnx`
+- Test: `dotnet test OpenBargain.slnx` (integration tests need Docker running; they start their own PostgreSQL)
+
+Frontend (from `src/web`):
+- `npm install` once, then `npm run dev` (http://localhost:5173, forwards `/api` to the API)
+- `npm run lint`, `npm test`, `npm run build` (builds into `src/OpenBargain.Api/wwwroot`, which the API serves)
 
 ## How we work
 1. **Simple first.** Build the simplest thing that works. Don't add libraries, layers, patterns or infrastructure until a real need shows up, and say so when you think one has.

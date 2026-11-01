@@ -27,3 +27,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Built web app (npm run build in src/web)
+src/OpenBargain.Api/wwwroot/

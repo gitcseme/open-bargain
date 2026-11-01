@@ -33,8 +33,8 @@ Status: `todo` · `in progress` · `done`
 |---|---|
 | M0-1 Backend solution | done |
 | M0-2 PostgreSQL connection | done |
-| M0-3 Frontend | todo |
-| M0-4 CI | in progress |
+| M0-3 Frontend | done |
+| M0-4 CI | done |
 | M0-5 Deploy to Azure | todo |
 
 ## PRD acceptance criteria → features

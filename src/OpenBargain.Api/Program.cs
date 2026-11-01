@@ -12,6 +12,9 @@ builder.Services.AddSingleton(sp =>
 
 var app = builder.Build();
 
+// Serves the built web app (src/web builds into wwwroot).
+app.UseStaticFiles();
+
 app.MapGet("/api/health", async (IServiceProvider services, ILogger<Program> logger, CancellationToken ct) =>
 {
     try
@@ -28,5 +31,9 @@ app.MapGet("/api/health", async (IServiceProvider services, ILogger<Program> log
             statusCode: StatusCodes.Status503ServiceUnavailable);
     }
 });
+
+// Unknown /api routes stay 404; every other path is a client route for the web app.
+app.MapFallback("/api/{**path}", () => Results.NotFound());
+app.MapFallbackToFile("index.html");
 
 app.Run();

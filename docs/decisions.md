@@ -47,4 +47,4 @@ Add new entries at the bottom: date, decision, short reason.
 
 ## Delivery
 
-15. **Branches and CI.** Confirmed (2026-10-31). Feature branches merge into `develop` through a pull request; `develop` is merged into `main` for releases. CI (`.github/workflows/ci.yml`) runs on every pull request to `develop` or `main` and on pushes to them. Branch protection on `develop` requires the "Backend build and test" check to pass before merging.
+15. **Branches and CI.** Confirmed (2026-10-31). Feature branches merge into `develop` through a pull request; `develop` is merged into `main` for releases. CI (`.github/workflows/ci.yml`) runs on every pull request to `develop` or `main` and on pushes to them. A ruleset on `develop` and `main` requires the "Backend build and test" and "Frontend lint, test and build" checks to pass before merging.
