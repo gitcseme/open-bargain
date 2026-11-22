@@ -56,6 +56,7 @@ Backend (from the repo root):
 - Run the API: `dotnet run --project src/OpenBargain.Api` (http://localhost:5142)
 - Build: `dotnet build OpenBargain.slnx`
 - Test: `dotnet test OpenBargain.slnx` (integration tests need Docker running; they start their own PostgreSQL)
+- Add a migration: `dotnet tool restore` once, then `dotnet ef migrations add <Name> --project src/Modules/<Module>/OpenBargain.Modules.<Module> --output-dir Infrastructure/Migrations`. The app applies migrations on startup.
 
 Frontend (from `src/web`):
 - `npm install` once, then `npm run dev` (http://localhost:5173, forwards `/api` to the API)
