@@ -400,4 +400,6 @@ On app start, dispatch one refresh (`status: 'restoring'`) and show `FullPageSpi
 | M1-5 | API base URL is `${window.location.origin}/api`. | Node's `fetch` (in Vitest) rejects relative URLs; same origin in the browser. |
 | M1-5 | `/profile` shows a placeholder until M1-6. | The route and guard belong to M1-5. |
 | M1-5 | `vite build` warns that the bundle is > 500 kB (≈180 kB gzipped). Left as is. | Code splitting isn't needed yet. |
+| M1-6 | deploy.md: the new step is §5 *JWT signing key*; the later steps are renumbered 6 and 7. It says that changing the key does **not** sign users out (the handover said it would once access tokens expire). | Old access tokens fail at once, but the web app gets a new one with its refresh cookie, and refresh tokens don't depend on the key. |
+| M1-6 | Local check: the API was run against the docker-compose database and the whole flow was checked with curl (register → login → `/api/me` → refresh → `PUT /api/me` → logout → refresh gets 401; `/profile` serves the web app). The browser checks in "Manual checks" are still for the user. | The agent has no browser. |
 | M1-5 | `npm run lint` reports one warning (`only-export-components`) in the generated shadcn `button.tsx`. Left as is. | Generated code; it's a warning, not an error. |

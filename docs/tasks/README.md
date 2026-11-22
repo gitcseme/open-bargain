@@ -46,7 +46,7 @@ Status: `todo` · `in progress` · `done`
 | M1-3 Refresh tokens and logout | done |
 | M1-4 Profile API | done |
 | M1-5 Frontend: auth | done |
-| M1-6 Frontend: profile page + deploy config | todo |
+| M1-6 Frontend: profile page + deploy config | done |
 
 ## PRD acceptance criteria → features
 

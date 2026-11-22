@@ -6,7 +6,7 @@ How the Azure resources for Open Bargain were created (task M0-5). Everything is
 
 ```
 GitHub Actions ──deploys──▶ Web App (runs on an App Service plan)
-                                 │  reads ConnectionStrings__Default from its settings
+                                 │  reads ConnectionStrings__Default and Jwt__SigningKey from its settings
                                  ▼
                       PostgreSQL Flexible Server
         (all inside one resource group)
@@ -67,7 +67,24 @@ The app reads `ConnectionStrings:Default`. On Linux, environment variables can't
 
 `/api/health` showing `"database":"ok"` after the first deploy confirms this step. If it fails, check this value and the PostgreSQL networking setting from step 3.
 
-## 5. Publish profile → GitHub secret
+## 5. JWT signing key
+
+The app signs access tokens (JWT, HS256) with `Jwt:SigningKey`. It refuses to start if the key is missing or shorter than 32 bytes. The key is never in the repo; `appsettings.Development.json` has a dev-only key for local runs.
+
+1. Generate a random key:
+   ```
+   openssl rand -base64 48
+   ```
+   or in PowerShell:
+   ```
+   [Convert]::ToBase64String((1..48 | % { Get-Random -Max 256 }) -as [byte[]])
+   ```
+2. Web App → **Settings → Environment variables → App settings** → **+ Add**: name `Jwt__SigningKey`, value = the generated key.
+3. **Apply** → **Apply** → **Confirm**. The app restarts.
+
+Keep the key in a password manager. Changing it makes every current access token invalid at once. Users stay signed in: the web app gets a new access token with its refresh cookie, which doesn't depend on this key. If the key leaks, change it straight away.
+
+## 6. Publish profile → GitHub secret
 
 The publish profile is an XML file with a username and password that can deploy to this Web App. Keep it secret.
 
@@ -77,7 +94,7 @@ The publish profile is an XML file with a username and password that can deploy 
    `gh secret set AZURE_WEBAPP_PUBLISH_PROFILE --repo gitcseme/open-bargain < <file>.PublishSettings`
 4. Delete the downloaded file. If it leaks: Web App → **Overview** → **Reset publish profile**, then update the secret.
 
-## 6. Deploy workflow
+## 7. Deploy workflow
 
 `.github/workflows/deploy.yml` runs when a pull request from `develop` into `main` is **merged**, or manually from `main` (**Actions → Deploy → Run workflow**, branch `main`), for example to redeploy after changing an Azure setting. Direct pushes to `main`, PRs from other branches, PRs closed without merging and manual runs on other branches don't deploy. It:
 
