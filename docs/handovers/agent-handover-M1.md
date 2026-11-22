@@ -81,7 +81,7 @@ Use current stable versions. Pin them as the repo already does (caret ranges in 
 "Jwt": { "SigningKey": "<a dev-only random value of at least 32 bytes>" }
 ```
 - Azure: App Service setting `Jwt__SigningKey`.
-- On startup the host checks that `Jwt:SigningKey` exists and is at least 32 bytes (UTF-8); otherwise it throws with a clear message.
+- On startup Accounts checks that `Jwt:SigningKey` exists and is at least 32 bytes (UTF-8), via `JwtOptions` validation with `ValidateOnStart`; otherwise the app fails to start with a clear message.
 
 ### Auth claims and helper
 - Access token claims: `sub` = user id (Guid), `name` = display name, `role` = `User` | `Admin`, plus `jti`, `iat`, `exp`.
@@ -403,3 +403,4 @@ On app start, dispatch one refresh (`status: 'restoring'`) and show `FullPageSpi
 | M1-5 | `npm run lint` reports one warning (`only-export-components`) in the generated shadcn `button.tsx`. Left as is. | Generated code; it's a warning, not an error. |
 | M1-6 | deploy.md: the new step is §5 *JWT signing key*; the later steps are renumbered 6 and 7. It says that changing the key does **not** sign users out (the handover said it would once access tokens expire). | Old access tokens fail at once, but the web app gets a new one with its refresh cookie, and refresh tokens don't depend on the key. |
 | M1-6 | Local check: the API was run against the docker-compose database and the whole flow was checked with curl (register → login → `/api/me` → refresh → `PUT /api/me` → logout → refresh gets 401; `/profile` serves the web app). The browser checks in "Manual checks" are still for the user. | The agent has no browser. |
+| M1 review | The signing-key check moved from the host (`EnsureJwtSigningKey`) to `JwtOptions` validation with `ValidateOnStart` in Accounts, with an integration test for a missing and a short key. It runs when the host starts, i.e. after startup migrations. | One owner of the rule; standard startup validation instead of a getter called only for its exception. |

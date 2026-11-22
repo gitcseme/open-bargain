@@ -17,8 +17,6 @@ builder.Services.AddAccountsModule();
 
 var app = builder.Build();
 
-app.EnsureJwtSigningKey();
-
 // Each module applies its pending migrations (decisions.md #17).
 if (app.Configuration.GetValue("Database:MigrateOnStartup", defaultValue: true))
 {

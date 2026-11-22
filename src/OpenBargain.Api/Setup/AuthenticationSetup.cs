@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 namespace OpenBargain.Api.Setup;
 
 // Accounts issues access tokens; the host validates them with the same "Jwt" settings.
+// Accounts checks the signing key at startup (JwtOptions validation).
 internal static class AuthenticationSetup
 {
     private static readonly TimeSpan ClockSkew = TimeSpan.FromSeconds(30);
@@ -21,7 +22,7 @@ internal static class AuthenticationSetup
                 {
                     ValidIssuer = config["Jwt:Issuer"],
                     ValidAudience = config["Jwt:Audience"],
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(SigningKey(config))),
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:SigningKey"] ?? "")),
                     ValidAlgorithms = [SecurityAlgorithms.HmacSha256],
                     NameClaimType = "name",
                     RoleClaimType = "role",
@@ -37,19 +38,5 @@ internal static class AuthenticationSetup
             });
         services.AddAuthorization();
         return services;
-    }
-
-    // Fail fast at startup rather than issue tokens with a weak or missing key.
-    public static void EnsureJwtSigningKey(this WebApplication app) => SigningKey(app.Configuration);
-
-    private static string SigningKey(IConfiguration config)
-    {
-        var key = config["Jwt:SigningKey"];
-        if (string.IsNullOrEmpty(key) || Encoding.UTF8.GetByteCount(key) < 32)
-        {
-            throw new InvalidOperationException(
-                "Jwt:SigningKey must be set to at least 32 bytes (App Service setting Jwt__SigningKey).");
-        }
-        return key;
     }
 }

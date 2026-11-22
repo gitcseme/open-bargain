@@ -1,3 +1,4 @@
+using System.Text;
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Routing;
@@ -38,7 +39,13 @@ public static class AccountsModule
             })
             .AddEntityFrameworkStores<AccountsDbContext>();
 
-        services.AddOptions<JwtOptions>().BindConfiguration(JwtOptions.Section);
+        // Fail at startup rather than issue tokens with a weak or missing key (decisions.md #20).
+        services.AddOptions<JwtOptions>()
+            .BindConfiguration(JwtOptions.Section)
+            .Validate(o => o.SigningKey is not null && Encoding.UTF8.GetByteCount(o.SigningKey) >= 32,
+                "Jwt:SigningKey must be set to at least 32 bytes (App Service setting Jwt__SigningKey).")
+            .ValidateOnStart();
+
         services.AddValidatorsFromAssembly(typeof(AccountsModule).Assembly, includeInternalTypes: true);
 
         services.AddScoped<IUserAccounts, UserAccounts>();
