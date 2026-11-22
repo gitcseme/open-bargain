@@ -1,8 +1,10 @@
 using Npgsql;
+using OpenBargain.Modules.Accounts;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Created on first use so tests can supply their own connection string.
+// Shared by every module's DbContext.
 builder.Services.AddSingleton(sp =>
 {
     var connectionString = sp.GetRequiredService<IConfiguration>().GetConnectionString("Default")
@@ -10,7 +12,15 @@ builder.Services.AddSingleton(sp =>
     return NpgsqlDataSource.Create(connectionString);
 });
 
+builder.Services.AddAccountsModule();
+
 var app = builder.Build();
+
+// Each module applies its pending migrations (decisions.md #17).
+if (app.Configuration.GetValue("Database:MigrateOnStartup", defaultValue: true))
+{
+    await app.Services.MigrateAccountsDatabaseAsync();
+}
 
 // Serves the built web app (src/web builds into wwwroot).
 app.UseStaticFiles();
@@ -36,4 +46,4 @@ app.MapGet("/api/health", async (IServiceProvider services, ILogger<Program> log
 app.MapFallback("/api/{**path}", () => Results.NotFound());
 app.MapFallbackToFile("index.html");
 
-app.Run();
+await app.RunAsync();
