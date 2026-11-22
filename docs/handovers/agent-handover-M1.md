@@ -388,5 +388,16 @@ On app start, dispatch one refresh (`status: 'restoring'`) and show `FullPageSpi
 | M1-2 | `ProblemDetails` carry a `traceId`, so the "identical 401 body" test compares bodies without it. | `AddProblemDetails` adds a per-request trace id. |
 | M1-2 | Unit tests now reference the Accounts module; the placeholder `SmokeTests` is removed. | Real unit tests exist now. |
 | M1-3 | The refresh algorithm lives in the `RefreshSession` use case. `IRefreshTokenStore` offers `BeginTransactionAsync` (returns a small `IUnitOfWork`), find by hash, add, `TryRevokeAsync` (the conditional `ExecuteUpdateAsync`) and revoke-all. | Keeps the rules in Application; the store and `IUserAccounts` share the scoped `AccountsDbContext`, so the user check runs in the same transaction. |
-| M1-4 | `PUT /api/me` for a suspended (or deleted) user returns 401, like `GET /api/me`. | architecture.md: every write action checks the suspended flag. |
 | M1-3 | Extra tests: parallel refreshes with one token (at most one wins, and the winner's token is revoked too), unknown token → 401. | Covers the race path of step 6. |
+| M1-4 | `PUT /api/me` for a suspended (or deleted) user returns 401, like `GET /api/me`. | architecture.md: every write action checks the suspended flag. |
+| M1-5 | `react-router` pinned to `^7.18.6`. | npm's latest is v8; Q17 says v7. |
+| M1-5 | Added `radix-ui`, `lucide-react` and `class-variance-authority`. | The shadcn CLI wrote the components but didn't install their imports. |
+| M1-5 | MSW 3 calls the option `onUnhandledFrame: 'error'` (was `onUnhandledRequest`). | Renamed in MSW 3. |
+| M1-5 | No RTK Query `refresh` endpoint. `refreshOnce(dispatch)` in `lib/baseQuery.ts` does the refresh with `fetch` and is used by both the session restore and the reauth wrapper. | One code path, and StrictMode's double effect shares the in-flight refresh instead of sending two (which would trip reuse detection). |
+| M1-5 | The reauth wrapper skips the refresh if the access token changed while the request was in flight, and just retries. | Two parallel 401s then never cause a second refresh, even if the first refresh finished before the second 401 arrived. |
+| M1-5 | Login and sign-up don't navigate themselves: they store the session, and `GuestOnly` redirects to the safe `returnTo` (or `/`). | Avoids a race between the store update and `navigate`. |
+| M1-5 | `safeReturnTo` also rejects values starting with `/\`. | Browsers treat `/\evil.com` like `//evil.com`. |
+| M1-5 | API base URL is `${window.location.origin}/api`. | Node's `fetch` (in Vitest) rejects relative URLs; same origin in the browser. |
+| M1-5 | `/profile` shows a placeholder until M1-6. | The route and guard belong to M1-5. |
+| M1-5 | `vite build` warns that the bundle is > 500 kB (≈180 kB gzipped). Left as is. | Code splitting isn't needed yet. |
+| M1-5 | `npm run lint` reports one warning (`only-export-components`) in the generated shadcn `button.tsx`. Left as is. | Generated code; it's a warning, not an error. |
