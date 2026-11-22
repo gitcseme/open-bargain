@@ -67,6 +67,28 @@ internal sealed class UserAccounts(
             "Identity rejected the new user: " + string.Join(", ", result.Errors.Select(e => e.Code)));
     }
 
+    public async Task<Result<UserAccount>> UpdateDisplayNameAsync(Guid userId, string displayName, CancellationToken ct)
+    {
+        var user = await db.Users.FindAsync([userId], ct);
+        if (user is null)
+        {
+            return AccountsError.UserUnavailable;
+        }
+
+        user.DisplayName = displayName;
+        user.NormalizedDisplayName = DisplayNames.Normalize(displayName);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (UniqueViolation(ex) is not null)
+        {
+            return AccountsError.DisplayNameTaken;
+        }
+
+        return ToAccount(user);
+    }
+
     // Lockout is counted here rather than by UserManager, because UserManager reads the system clock
     // and we use TimeProvider everywhere (decisions.md #19).
     public async Task<PasswordCheck> CheckPasswordAsync(Guid userId, string password, CancellationToken ct)

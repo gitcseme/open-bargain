@@ -50,6 +50,7 @@ public static class AccountsModule
         services.AddScoped<RefreshSession>();
         services.AddScoped<Logout>();
         services.AddScoped<GetMe>();
+        services.AddScoped<UpdateProfile>();
 
         return services;
     }
