@@ -8,14 +8,16 @@ A marketplace built around scheduled, live bargain rooms. A seller opens a room 
 - `docs/open-bargain-mvp.md`: what we are building
 - `docs/architecture.md`: modules, tables, states, how key flows work
 - `docs/decisions.md`: answers to open questions in the PRD
-- `docs/tasks/README.md`: task order and status. Work on one task at a time.
+- `docs/tasks/README.md`: task order and status. Work on one feature at a time.
+- `docs/handovers/agent-handover-<Mn>.md`: every decision for the feature being built
 
 ## Stack
 - Backend: ASP.NET Core (.NET 10), EF Core, PostgreSQL
-- Frontend: React + TypeScript, Vite, Tailwind CSS + shadcn/ui
+- Backend validation: FluentValidation (validators in Application, run by `ValidationFilter<T>`)
+- Frontend: React + TypeScript, Vite, Tailwind CSS + shadcn/ui, react-router v7, Redux Toolkit + RTK Query, Formik + Yup
 - Auth: ASP.NET Core Identity for users/passwords. JWT access token (15 min, sent as Bearer) + rotating refresh token (7 days, httpOnly cookie)
 - Live updates: SignalR (inside the same app)
-- Tests: xUnit (backend), Vitest (frontend)
+- Tests: xUnit + `FakeTimeProvider` (backend), Vitest + MSW (frontend)
 - Repo/CI/CD: GitHub + GitHub Actions
 - Hosting: Azure App Service (API + built frontend), Azure Database for PostgreSQL, Azure Blob Storage, Azure Communication Services (email)
 
@@ -64,14 +66,12 @@ Frontend (from `src/web`):
 
 ## How we work
 1. **Simple first.** Build the simplest thing that works. Don't add libraries, layers, patterns or infrastructure until a real need shows up, and say so when you think one has.
-2. **One task at a time** from `docs/tasks/`. The loop for each task:
-   1. Plan it.
-   2. The user approves.
-   3. Implement it with tests.
-   4. Run build + tests.
-   5. Self-review.
-   6. The user reviews the diff.
-   7. Commit.
+2. **One feature at a time** from `docs/tasks/`. The loop for each feature:
+   1. A planning session with the user, where every decision is made.
+   2. `docs/handovers/agent-handover-<Mn>.md` is written.
+   3. The agent implements all tasks in order, one commit per task (build + tests green, self-review first). Gaps it fills go in the handover's agent log.
+   4. The user reviews the commits.
+   5. Push + PR.
 3. Keep diffs small and focused on the task. Update the task's status in `docs/tasks/README.md`.
 4. When the PRD is unclear, ask, then record the answer in `docs/decisions.md`.
 5. UI is designed for desktop web first and must be fully usable on mobile widths.

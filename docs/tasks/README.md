@@ -2,21 +2,19 @@
 
 Features (M0–M10) are done in order. Each feature file breaks into small tasks. A feature gets its detailed tasks just before work starts on it.
 
-Work loop for each task:
-1. Plan.
-2. User approves.
-3. Implement with tests.
-4. Build + tests pass.
-5. Self-review.
-6. User reviews the diff.
-7. Commit.
+Work loop for each feature (decisions.md #32):
+1. A planning session with the user, where every decision is made.
+2. `docs/handovers/agent-handover-<Mn>.md` is written.
+3. The agent implements all tasks, one commit per task (build + tests green, self-review, status updated here).
+4. The user reviews the commits.
+5. Push + PR.
 
 Status: `todo` · `in progress` · `done`
 
 | Feature | File | Status |
 |---|---|---|
 | M0 Walking skeleton | [M0-walking-skeleton.md](M0-walking-skeleton.md) | in progress |
-| M1 Accounts (sign-up, JWT login, profile) | [M1-accounts.md](M1-accounts.md) | in progress |
+| M1 Accounts (sign-up, JWT login, profile) | [M1-accounts.md](M1-accounts.md) | done |
 | M2 Create/edit room + media | — | todo |
 | M3 Discovery, join, private invitations | — | todo |
 | M4 Room lifecycle timer + event history | — | todo |
