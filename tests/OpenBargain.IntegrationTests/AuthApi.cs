@@ -49,6 +49,35 @@ internal static class AuthApi
         return client.SendAsync(request);
     }
 
+    // The raw Set-Cookie header for ob_refresh, if the response sets or clears it.
+    public static string? RefreshSetCookie(this HttpResponseMessage response) =>
+        response.Headers.TryGetValues("Set-Cookie", out var cookies)
+            ? cookies.SingleOrDefault(c => c.StartsWith("ob_refresh=", StringComparison.Ordinal))
+            : null;
+
+    // The cookie value from the ob_refresh Set-Cookie header.
+    public static string RefreshToken(this HttpResponseMessage response)
+    {
+        var header = response.RefreshSetCookie() ?? throw new InvalidOperationException("No ob_refresh cookie was set.");
+        return header["ob_refresh=".Length..header.IndexOf(';')];
+    }
+
+    // Sends the cookie by hand, so each test controls exactly which token is presented.
+    public static Task<HttpResponseMessage> RefreshAsync(this HttpClient client, string? refreshToken) =>
+        client.SendAsync(WithRefreshCookie(new HttpRequestMessage(HttpMethod.Post, "/api/auth/refresh"), refreshToken));
+
+    public static Task<HttpResponseMessage> LogoutAsync(this HttpClient client, string? refreshToken) =>
+        client.SendAsync(WithRefreshCookie(new HttpRequestMessage(HttpMethod.Post, "/api/auth/logout"), refreshToken));
+
+    private static HttpRequestMessage WithRefreshCookie(HttpRequestMessage request, string? refreshToken)
+    {
+        if (refreshToken is not null)
+        {
+            request.Headers.Add("Cookie", $"ob_refresh={refreshToken}");
+        }
+        return request;
+    }
+
     public static async Task<string?> ProblemCodeAsync(this HttpResponseMessage response)
     {
         var body = await response.Content.ReadFromJsonAsync<JsonObject>();

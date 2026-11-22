@@ -42,10 +42,13 @@ public static class AccountsModule
         services.AddValidatorsFromAssembly(typeof(AccountsModule).Assembly, includeInternalTypes: true);
 
         services.AddScoped<IUserAccounts, UserAccounts>();
+        services.AddScoped<IRefreshTokenStore, RefreshTokenStore>();
         services.AddSingleton<IAccessTokenIssuer, JwtAccessTokenIssuer>();
 
         services.AddScoped<RegisterUser>();
         services.AddScoped<LoginUser>();
+        services.AddScoped<RefreshSession>();
+        services.AddScoped<Logout>();
         services.AddScoped<GetMe>();
 
         return services;

@@ -11,6 +11,8 @@ internal sealed class AccountsDbContext(DbContextOptions<AccountsDbContext> opti
 {
     public const string Schema = "accounts";
 
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
     // Keeps this module's migration history in its own schema.
     public static void ConfigureNpgsql(NpgsqlDbContextOptionsBuilder npgsql) =>
         npgsql.MigrationsHistoryTable(HistoryRepository.DefaultTableName, Schema);

@@ -22,7 +22,7 @@ public class AccountsSchemaTests(ApiFactory factory) : IClassFixture<ApiFactory>
             }
         }
 
-        // Only Identity's user table plus this module's own migration history.
-        Assert.Equal(["Users", "__EFMigrationsHistory"], tables);
+        // Identity's user table, refresh tokens, and this module's own migration history.
+        Assert.Equal(["RefreshTokens", "Users", "__EFMigrationsHistory"], tables);
     }
 }

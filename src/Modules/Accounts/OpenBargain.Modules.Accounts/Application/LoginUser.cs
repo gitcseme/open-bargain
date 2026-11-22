@@ -1,4 +1,5 @@
 using FluentValidation;
+using Microsoft.Extensions.Options;
 
 namespace OpenBargain.Modules.Accounts.Application;
 
@@ -14,9 +15,14 @@ internal sealed class LoginRequestValidator : AbstractValidator<LoginRequest>
 }
 
 // Every failure (unknown email, locked out, wrong password, suspended) is the same InvalidCredentials.
-internal sealed class LoginUser(IUserAccounts users, IAccessTokenIssuer tokens)
+internal sealed class LoginUser(
+    IUserAccounts users,
+    IAccessTokenIssuer accessTokens,
+    IRefreshTokenStore refreshTokens,
+    IOptions<JwtOptions> options,
+    TimeProvider time)
 {
-    public async Task<Result<AuthResponse>> ExecuteAsync(LoginRequest request, CancellationToken ct)
+    public async Task<Result<Session>> ExecuteAsync(LoginRequest request, CancellationToken ct)
     {
         var user = await users.FindByEmailAsync(request.Email.Trim(), ct);
         if (user is null)
@@ -37,7 +43,10 @@ internal sealed class LoginUser(IUserAccounts users, IAccessTokenIssuer tokens)
 
         await users.ResetAccessFailedCountAsync(user.Id, ct);
 
-        var token = tokens.Issue(user);
-        return new AuthResponse(token.Token, token.ExpiresAt, UserResponse.From(user));
+        var refresh = RefreshTokens.Create(time.GetUtcNow(), options.Value.RefreshTokenDays);
+        await refreshTokens.AddAsync(user.Id, refresh, ct);
+
+        var access = accessTokens.Issue(user);
+        return new Session(new AuthResponse(access.Token, access.ExpiresAt, UserResponse.From(user)), refresh.Token, refresh.ExpiresAt);
     }
 }
