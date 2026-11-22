@@ -42,7 +42,7 @@ Status: `todo` · `in progress` · `done`
 | Task | Status |
 |---|---|
 | M1-1 Accounts module skeleton, EF Core, architecture tests | done |
-| M1-2 Sign-up, login, JWT | todo |
+| M1-2 Sign-up, login, JWT | done |
 | M1-3 Refresh tokens and logout | todo |
 | M1-4 Profile API | todo |
 | M1-5 Frontend: auth | todo |

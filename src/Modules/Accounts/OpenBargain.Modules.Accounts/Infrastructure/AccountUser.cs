@@ -8,6 +8,9 @@ internal sealed class AccountUser : IdentityUser<Guid>
 {
     public required string DisplayName { get; set; }
 
+    // DisplayNames.Normalize(DisplayName); unique, so names are unique ignoring case.
+    public required string NormalizedDisplayName { get; set; }
+
     // Set once avatar upload exists (M2).
     public string? AvatarUrl { get; set; }
 

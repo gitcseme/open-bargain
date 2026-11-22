@@ -10,6 +10,8 @@ internal sealed class AccountUserConfiguration : IEntityTypeConfiguration<Accoun
     {
         user.ToTable("Users");
         user.Property(u => u.DisplayName).HasMaxLength(40);
+        user.Property(u => u.NormalizedDisplayName).HasMaxLength(40);
+        user.HasIndex(u => u.NormalizedDisplayName).IsUnique();
         user.Property(u => u.AvatarUrl).HasMaxLength(2048);
         user.Property(u => u.Role).HasConversion<string>().HasMaxLength(20);
     }
