@@ -18,7 +18,7 @@ The host project `src/OpenBargain.Api` contains no business logic. It:
 ```
 src/
   OpenBargain.Api/                          # host
-  OpenBargain.SharedKernel/                 # tiny shared basics: base entity, Result, IClock
+  OpenBargain.SharedKernel/                 # tiny shared basics, added only when two modules need them (time comes from .NET's TimeProvider)
   Modules/
     Rooms/
       OpenBargain.Modules.Rooms/            # the module itself; everything here is internal
@@ -65,7 +65,7 @@ Infrastructure ──► Application, Domain
 
 - **Domain:** entities and business rules, for example offer state changes, room state changes and price rule checks. No dependencies on EF Core, ASP.NET or anything else outside.
 - **Application:** use cases, one class per action (`CreateOffer`, `AcceptOffer`, `CounterOffer`, ...). It also defines the interfaces it needs from outside (data access, blob storage, email, clock). It implements the module's public API.
-- **Infrastructure:** implements those interfaces with EF Core, the PostgreSQL advisory lock, Azure Blob Storage and email.
+- **Infrastructure:** implements those interfaces with EF Core, the PostgreSQL advisory lock, Azure Blob Storage and email. EF mapping lives in one `IEntityTypeConfiguration<T>` per entity (`Infrastructure/Configurations/`), picked up with `ApplyConfigurationsFromAssembly`.
 - **Endpoints:** HTTP endpoints (minimal APIs) that check auth, call a use case and map the result to a response.
 
 Keep it simple:

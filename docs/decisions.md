@@ -48,3 +48,10 @@ Add new entries at the bottom: date, decision, short reason.
 ## Delivery
 
 15. **Branches and CI.** Confirmed (2026-10-31). Feature branches merge into `develop` through a pull request; `develop` is merged into `main` for releases. CI (`.github/workflows/ci.yml`) runs on every pull request to `develop` or `main` and on pushes to them. A ruleset on `develop` and `main` requires the "Backend build and test" and "Frontend lint, test and build" checks to pass before merging.
+
+## M1
+
+16. **Avatar upload waits for M2.** Confirmed (2026-11-21). M1 stores an optional `AvatarUrl` and the UI shows initials. Upload arrives in M2, when Blob Storage is added for room media. *Reason:* no new infrastructure just for avatars.
+17. **Migrations run at app startup.** Confirmed (2026-11-21). Each module applies its pending EF Core migrations when the app starts (`Database:MigrateOnStartup`, default on). *Reason:* simplest with one App Service instance; revisit if we scale out.
+18. **Identity tables.** Confirmed (2026-11-21). ASP.NET Core Identity's user table only, renamed to `accounts."Users"`. The role tables (role is a column) and the unused claims/logins/tokens tables are left out of the model. *Reason:* keep `UserManager` (hashing, lockout, later email tokens) without empty tables.
+19. **Clock.** Confirmed (2026-11-21). Use .NET's built-in `TimeProvider` (and `FakeTimeProvider` in tests) instead of a custom `IClock`.
