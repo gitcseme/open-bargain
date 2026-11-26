@@ -2,10 +2,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\OpenBargain.SharedKernel\OpenBargain.SharedKernel.csproj" />
+    <ProjectReference Include="..\Modules\Accounts\OpenBargain.Modules.Accounts\OpenBargain.Modules.Accounts.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Npgsql" Version="10.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.15" />
+    <PackageReference Include="Npgsql" Version="10.0.4" />
   </ItemGroup>
 
 </Project>

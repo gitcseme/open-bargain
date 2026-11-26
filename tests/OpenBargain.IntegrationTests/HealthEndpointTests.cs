@@ -22,9 +22,9 @@ public class HealthEndpointTests(ApiFactory factory) : IClassFixture<ApiFactory>
     public async Task Health_returns_503_when_database_is_unreachable()
     {
         // Port 1 on localhost refuses connections immediately.
-        var client = factory.WithWebHostBuilder(builder => builder.UseSetting(
-                "ConnectionStrings:Default",
-                "Host=localhost;Port=1;Database=x;Username=x;Password=x;Timeout=2"))
+        var client = factory.WithWebHostBuilder(builder => builder
+                .UseSetting("ConnectionStrings:Default", "Host=localhost;Port=1;Database=x;Username=x;Password=x;Timeout=2")
+                .UseSetting("Database:MigrateOnStartup", "false"))
             .CreateClient();
 
         var response = await client.GetAsync("/api/health");

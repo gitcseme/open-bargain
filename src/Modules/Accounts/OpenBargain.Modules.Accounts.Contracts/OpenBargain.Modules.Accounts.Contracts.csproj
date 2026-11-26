@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The Accounts module's public API: request/response types now, IAccountsApi once another module needs it. -->
+
+</Project>

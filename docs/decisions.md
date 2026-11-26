@@ -48,3 +48,26 @@ Add new entries at the bottom: date, decision, short reason.
 ## Delivery
 
 15. **Branches and CI.** Confirmed (2026-10-31). Feature branches merge into `develop` through a pull request; `develop` is merged into `main` for releases. CI (`.github/workflows/ci.yml`) runs on every pull request to `develop` or `main` and on pushes to them. A ruleset on `develop` and `main` requires the "Backend build and test" and "Frontend lint, test and build" checks to pass before merging.
+
+## M1
+
+16. **Avatar upload waits for M2.** Confirmed (2026-11-21). M1 stores an optional `AvatarUrl` and the UI shows initials. Upload arrives in M2, when Blob Storage is added for room media. *Reason:* no new infrastructure just for avatars.
+17. **Migrations run at app startup.** Confirmed (2026-11-21). Each module applies its pending EF Core migrations when the app starts (`Database:MigrateOnStartup`, default on). *Reason:* simplest with one App Service instance; revisit if we scale out.
+18. **Identity tables.** Confirmed (2026-11-21). ASP.NET Core Identity's user table only, renamed to `accounts."Users"`. The role tables (role is a column) and the unused claims/logins/tokens tables are left out of the model. *Reason:* keep `UserManager` (hashing, lockout, later email tokens) without empty tables.
+19. **Clock.** Confirmed (2026-11-21). Use .NET's built-in `TimeProvider` (and `FakeTimeProvider` in tests) instead of a custom `IClock`.
+
+## M1 Accounts (planning session, 2026-11-22)
+
+20. **JWT signing.** Confirmed (2026-11-22). HS256 with `Jwt:SigningKey` (at least 32 bytes; App Service setting `Jwt__SigningKey`). Issuer and audience `open-bargain`. The app refuses to start without a valid key.
+21. **JWT layout.** Confirmed (2026-11-22). Accounts issues tokens; the host validates them. Claims `sub`, `name`, `role` (plus `jti`, `iat`, `exp`); inbound claim mapping off.
+22. **Register.** Confirmed (2026-11-22). Creates the user only (201 + user). No token or cookie; the web app logs in straight after with the same credentials.
+23. **Input rules.** Confirmed (2026-11-22). Password 8–128 characters, no composition rules. Email valid, at most 256, unique. Display name trimmed, 2–40, required, unique ignoring case (a `NormalizedDisplayName` column with a unique index).
+24. **Errors.** Confirmed (2026-11-22). RFC 9457 ProblemDetails. Business errors carry a stable `code` (`email_taken`, `display_name_taken`, `invalid_credentials`, `invalid_refresh_token`, `rate_limited`). Validation uses FluentValidation validators in Application, run by a per-endpoint `ValidationFilter<T>`.
+25. **Lockout.** Confirmed (2026-11-22). 5 failed logins lock the account for 15 minutes. Every login failure (unknown email, locked, wrong password, suspended) returns the same 401. *Reason:* doesn't reveal which accounts exist.
+26. **Rate limiting.** Confirmed (2026-11-22). Built-in limiter, 10 requests per minute per IP on register, login and refresh → 429.
+27. **Suspension window.** Confirmed (2026-11-22). Access tokens aren't checked against the suspended flag on each request; up to 15 minutes is accepted. `/api/me`, login and refresh refuse suspended users.
+28. **Sessions.** Confirmed (2026-11-22). Refresh tokens slide: each rotation gives a new 7-day expiry. Reusing a revoked token revokes all of the user's tokens. The web app serializes refreshes across tabs with Web Locks. *Reason:* strict reuse detection would otherwise log out users with several tabs open.
+29. **Profile update.** Confirmed (2026-11-22). `PUT /api/me { displayName }` only. Email, password and avatar can't change in M1.
+30. **Frontend libraries.** Confirmed (2026-11-22). react-router v7 (declarative), Redux Toolkit + RTK Query, Formik + Yup, shadcn/ui. The access token lives only in memory (Redux).
+31. **Tests.** Confirmed (2026-11-22). Backend tests drive time with `FakeTimeProvider`; frontend tests mock the API with MSW.
+32. **Working with an implementation agent.** Confirmed (2026-11-22). Each milestone starts with a planning session where every decision is made and written to `docs/handovers/agent-handover-<Mn>.md`. The agent then implements all tasks without stopping, one commit per task, and logs any gap it fills in the handover. *Reason:* fewer round trips; the user reviews all commits at the end.
