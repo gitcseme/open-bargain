@@ -18,7 +18,7 @@ The host project `src/OpenBargain.Api` contains no business logic. It:
 ```
 src/
   OpenBargain.Api/                          # host
-  OpenBargain.SharedKernel/                 # tiny shared basics: base entity, Result, IClock
+  OpenBargain.SharedKernel/                 # tiny shared basics, added only when two modules need them (time comes from .NET's TimeProvider)
   Modules/
     Rooms/
       OpenBargain.Modules.Rooms/            # the module itself; everything here is internal
@@ -65,7 +65,7 @@ Infrastructure ──► Application, Domain
 
 - **Domain:** entities and business rules, for example offer state changes, room state changes and price rule checks. No dependencies on EF Core, ASP.NET or anything else outside.
 - **Application:** use cases, one class per action (`CreateOffer`, `AcceptOffer`, `CounterOffer`, ...). It also defines the interfaces it needs from outside (data access, blob storage, email, clock). It implements the module's public API.
-- **Infrastructure:** implements those interfaces with EF Core, the PostgreSQL advisory lock, Azure Blob Storage and email.
+- **Infrastructure:** implements those interfaces with EF Core, the PostgreSQL advisory lock, Azure Blob Storage and email. EF mapping lives in one `IEntityTypeConfiguration<T>` per entity (`Infrastructure/Configurations/`), picked up with `ApplyConfigurationsFromAssembly`.
 - **Endpoints:** HTTP endpoints (minimal APIs) that check auth, call a use case and map the result to a response.
 
 Keep it simple:
@@ -81,8 +81,8 @@ Keep it simple:
 ## Main tables (by module)
 
 - **Accounts**
-  - **Users**: email, password hash, display name, avatar, role (user/admin), suspended flag
-  - **RefreshTokens**: user, token hash, expires at, revoked at
+  - **Users** (Identity's user table): email, password hash, lockout fields, display name + `NormalizedDisplayName` (unique, so names are unique ignoring case), avatar URL, role (User/Admin), suspended flag, created at
+  - **RefreshTokens**: user (cascade delete), token hash (SHA-256 hex, unique), created at, expires at, revoked at, replaced-by token id
 - **Rooms**
   - **Rooms**:
     - seller, title, description, category, condition + note, location, pickup info
@@ -195,14 +195,21 @@ Every path that changes stock must take the same lock. An automated test fires s
 
 ## Authentication (JWT)
 
-- **Users and passwords:** ASP.NET Core Identity stores users and hashes passwords.
-- **Login:** returns a short-lived **JWT access token** (15 minutes) and a **refresh token** (7 days).
-  - The access token is kept in memory in the React app and sent as `Authorization: Bearer ...`.
-  - The refresh token is sent as an httpOnly, secure cookie. It is stored hashed in the database, and each use issues a new one and revokes the old one.
-- **SignalR** receives the access token as the `access_token` query parameter, the standard way for websockets.
-- **Roles:** the JWT carries the user id, display name and role (`Admin` for admins).
-- **Suspension:** a suspended user's refresh tokens are revoked, so they are locked out within 15 minutes at most. Every write action also checks the suspended flag.
-- **Signing key:** stored in App Service settings, never in the repo.
+- **Users and passwords:** ASP.NET Core Identity stores users and hashes passwords. 5 failed logins lock the account for 15 minutes. Every login failure returns the same 401 (`invalid_credentials`).
+- **Register** creates the user only; the web app then logs in with the same credentials.
+- **Login:** returns a short-lived **JWT access token** (15 minutes, HS256) and a **refresh token** (7 days).
+  - Accounts issues the tokens; the host validates them.
+  - The access token is kept in memory in the React app (Redux, never browser storage) and sent as `Authorization: Bearer ...`.
+  - The refresh token is the cookie `ob_refresh`: httpOnly, Secure, SameSite=Strict, `Path=/api/auth`. Only its SHA-256 hash is stored.
+- **Refresh** (`POST /api/auth/refresh`) rotates the token in one transaction: the old one is revoked and a new one issued with a fresh 7-day expiry (a **sliding** session).
+  - **Reuse:** presenting a revoked token (or losing a parallel rotation race) revokes **all** of the user's tokens.
+  - The web app refreshes once on a 401 and retries the request once. Concurrent refreshes share one request, and tabs take turns through Web Locks.
+- **Logout** revokes the presented token and clears the cookie.
+- **Rate limit:** register, login and refresh allow 10 requests per minute per client IP (429 `rate_limited`).
+- **SignalR** receives the access token as the `access_token` query parameter, the standard way for websockets (from M6).
+- **Roles:** the JWT carries the user id (`sub`), display name (`name`) and role (`role`, `Admin` for admins).
+- **Suspension:** a suspended user can't log in or refresh, and `/api/me` refuses them. Their refresh tokens are revoked, so they are locked out within 15 minutes at most. Every write action also checks the suspended flag.
+- **Signing key:** `Jwt__SigningKey` in App Service settings (at least 32 bytes), never in the repo. The app won't start without it.
 
 ## Background timer
 
